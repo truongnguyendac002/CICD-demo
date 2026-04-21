@@ -83,7 +83,17 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            REGISTRY="${{ secrets.GCP_REGION }}-docker.pkg.dev"
             IMAGE_URI="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GAR_REPO }}/order-service:${{ github.sha }}"
+
+            if ! command -v gcloud >/dev/null 2>&1; then
+              echo "gcloud is not installed on VM. Install google-cloud-cli first."
+              exit 1
+            fi
+
+            gcloud auth configure-docker "$REGISTRY" --quiet
+            gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin "https://$REGISTRY"
+
             docker pull "$IMAGE_URI"
             docker stop order-service || true
             docker rm order-service || true
