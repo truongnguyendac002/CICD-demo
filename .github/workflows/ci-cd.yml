@@ -55,7 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Filesystem security scan
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: fs
           scan-ref: .
@@ -96,7 +96,7 @@ jobs:
         run: docker build -t ${{ steps.meta.outputs.image_uri }} .
 
       - name: Image security scan
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: ${{ steps.meta.outputs.image_uri }}
           format: table
@@ -133,3 +133,4 @@ jobs:
       - name: Verify staging health
         run: |
           curl -f http://${{ secrets.STAGING_HOST }}:8080/actuator/health
+
