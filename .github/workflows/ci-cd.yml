@@ -118,9 +118,9 @@ jobs:
       - name: Deploy to production VM
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: ${{ secrets.PRODUCTION_SSH_USER }}
-          key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             REGISTRY="${{ secrets.GCP_REGION }}-docker.pkg.dev"
             IMAGE_URI="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GAR_REPO }}/order-service:${{ github.sha }}"
@@ -146,5 +146,5 @@ jobs:
     steps:
       - name: Verify production health
         run: |
-          curl -f http://${{ secrets.PRODUCTION_HOST }}:8080/actuator/health
+          curl -f http://${{ secrets.PROD_HOST }}:8080/actuator/health
 
