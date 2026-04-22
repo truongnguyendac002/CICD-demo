@@ -109,3 +109,42 @@ jobs:
         run: |
           curl -f http://${{ secrets.STAGING_HOST }}:8080/actuator/health
 
+  deploy_production:
+    runs-on: ubuntu-latest
+    needs: verify_staging
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Deploy to production VM
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_SSH_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          script: |
+            REGISTRY="${{ secrets.GCP_REGION }}-docker.pkg.dev"
+            IMAGE_URI="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GAR_REPO }}/order-service:${{ github.sha }}"
+
+            if ! command -v gcloud >/dev/null 2>&1; then
+              echo "gcloud is not installed on VM. Install google-cloud-cli first."
+              exit 1
+            fi
+
+            gcloud auth configure-docker "$REGISTRY" --quiet
+            gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin "https://$REGISTRY"
+
+            docker pull "$IMAGE_URI"
+            docker stop order-service || true
+            docker rm order-service || true
+            docker run -d --name order-service --restart always -p 8080:8080 \
+              -e SPRING_PROFILES_ACTIVE=prod \
+              "$IMAGE_URI"
+
+  verify_production:
+    runs-on: ubuntu-latest
+    needs: deploy_production
+    steps:
+      - name: Verify production health
+        run: |
+          curl -f http://${{ secrets.PRODUCTION_HOST }}:8080/actuator/health
+
